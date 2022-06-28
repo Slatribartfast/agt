@@ -3,8 +3,8 @@ import time
 
 import staaten
 import loosingKoalition
-import winningKoalitions
 import calculateLoosingKoalition
+from multiprocessing import Process
 
 def without(a: list[int], b: list[int]) -> list[int]:
     # a without b
@@ -136,7 +136,47 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
             
     return [W_1,W_2]
     
+    
+def get_winning_coalitions_larger_two(input_coal: list[list]) -> list[list]:
+    l = []
+    for coal in input_coal:
+        for i in coal:
+            l.append(i)
+    if len(l) < ((0.55 * len(input_coal)) * len(staaten.state_names)):
+        # print("too less states")
+        return[]
+    
+    c = 0
+    for i in l:
+        c += staaten.state_share[i]
+    l.sort()
+    w_1 = []
+    i = len(l) - 1
+    while(not is_winning(w_1)):
+        if i == 0:
+            # print("no win")
+            return[]
+        if l[i] not in w_1:
+            w_1.append(l.pop(i))
+        i = i - 1
         
+    w_2 = []
+    i = len(l) - 1
+    while(not is_winning(w_2)):
+        if i == 0:
+            # print("just one win")
+            return[]
+        if l[i] not in w_2:
+            w_2.append(l.pop(i))
+        i = i - 1
+        
+    if is_winning(l):
+        return [w_1,w_2,l]
+    else:
+        # print("just two win")
+        return[]
+
+    
 
 def is_winning(input_coal: list[int]) -> bool:
     if len(input_coal) >= 25:
@@ -171,7 +211,8 @@ def is_non_separable(input_losing_coal: list[list], winning_coal: list[list]) ->
     return True
 
 
-def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
+def get_cover(lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
+    
     res = -1
     time_before = time.time()
     non_sep_loosing_coal = []
@@ -203,17 +244,11 @@ def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.l
                         continue
                     if i == k:
                         continue
-                    for w_1 in range(len(wk)):
-                        for w_2 in range(w_1, len(wk)):
-                            for w_3 in range(w_2,len(wk)):
-                                if w_1 == w_2:
-                                    continue
-                                if w_2 == w_3:
-                                    continue
-                                if w_1 == w_3:
-                                    continue
-                                if is_non_separable(input_losing_coal=[lk[i],lk[j],lk[k]], winning_coal=[wk[w_1], wk[w_2], wk[w_3]]):
-                                    non_sep_loosing_coal.append([i,j,k])
+                    
+                    wins = get_winning_coalitions_larger_two([lk[i],lk[j],lk[k]])
+                    if len(wins) > 0:
+                        if is_non_separable(input_losing_coal=[lk[i],lk[j],lk[k]], winning_coal=wins):
+                            non_sep_loosing_coal.append([i,j,k])        
                         
     # print("die zweier und dreier")
     # for elem in non_sep_loosing_coal:
@@ -244,6 +279,15 @@ def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.l
                 for l in range(k+1, len(lk)):
                     cover.append([i,j,k,l])
                     pass
+                
+    # fünfer reinwerfen
+    for i in range(len(lk)):
+        for j in range(i+1, len(lk)):
+            for k in range(j+1, len(lk)):
+                for l in range(k+1, len(lk)):
+                    for m in range(l+1, len(lk)):
+                        cover.append([i,j,k,l,m])
+                        pass
                     
 
             
@@ -275,9 +319,13 @@ def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.l
     
     # falls die max 4 kardinaliät nicht reichte nochmal mit mehr (wird bisher nicht gemacht, nur problem gecalled)
     for elem in cover_3:
-        if len(elem)> 3:
+        if len(elem) > 4:
             if debug:
-                print("DAS GEHT SO NICHT!!! es gibt 4er cover, die nicht gekickt werden -> es müssen dann auch fünfer betrachtet werden, sonst gilt der Beweis nicht")
+                print("Es gibt 5er cover, das nicht gekickt werden -> es müssen dann auch fünfer betrachtet werden, sonst gilt der Beweis nicht")
+                print(f"unkickbar {elem} aus \n")
+                for ding in non_sep_loosing_coal:
+                    print(ding)
+            
             return -1
     #
     # step 2 keine 7 verschiedene daraus als vereinigugn ergibt das gesamte L1 bis L15
@@ -317,30 +365,49 @@ def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.l
     return res
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12, min_gain=7, kick_rate=500, give_up_rate=100000,id = -1):  
+    print("go")
     best = 0
-    tries = 0
-    with open('result.txt', 'w') as f:
-        f.write('sucessfull combis')
-        f.flush()
-        while(best < 10):
+    tries = 0            
+    while(True):  
+        tries += 1
+        lk = calculateLoosingKoalition.get_loosing_coals(max_out, max_overall, min_gain, kick_rate, give_up_rate)
+        res = get_cover(lk = lk, debug = False)
+        if res > best:
+            best = res
             print(best)
-            tries += 1
-            if tries % 10 == 0:
-                f.write(f"tried {tries} times") 
-                f.flush()
-            lk = calculateLoosingKoalition.get_loosing_coals(max_overall=20)
-            res = get_cover(lk=lk, debug = False)
-            if res > best:
-                best = res
-                f.write(best)
-                f.write("\n")
-                f.write(lk)
+            with open(name, 'a') as f: 
+                f.write(str(best)+ "\n")
+                f.write(f"process id {id}\n")
+                f.write("stats\n")
+                f.write(f"{max_out}, {max_overall}, {min_gain}, {kick_rate}, {give_up_rate}\n")
+                f.write(str(time.strftime("%Y%m%d-%H%M%S")))
+                f.write("\nloosing coalitions taken\n")
+                for elem in lk:
+                    f.write(str(staaten.make_readable_alla_paper(elem)) + "\n")
                 f.write("\n")
                 f.write("\n")
                 f.flush()
+    
+
+
+if __name__ == '__main__':       
+    proc = []
+    num_loosing = [16,16,16,16,16,15,15,15,15,14,13,12,11,10,9,8]
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    name = "results"+timestr+".txt"
+    with open(name, 'w') as f: 
+                f.write("Results\n\n")
+                f.flush()
+
+    for i in range(len(num_loosing)):         
+        proc.append(Process(target=a_process_for_parallel_execution, args=(name,5, num_loosing[i], 7, 1000, 100000,i))) 
+        proc[-1].start()
+        time.sleep(0.1)
+    for i in range(len(proc)):       
+        proc[i].join() 
         
+
         
 
     

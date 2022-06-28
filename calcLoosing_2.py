@@ -5,8 +5,9 @@ import main
 from itertools import combinations
 import random
 import math
+import numpy as np
 
-def calc_gain(l_1:list[int], l_2:list[int]):
+def calc_gain(l_1:np.array, l_2:np.array):
     # distance l_1 to l_2
     # no real distance because order matters
     
@@ -20,7 +21,9 @@ def calc_gain(l_1:list[int], l_2:list[int]):
     return res
 
 def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6, kick_rate: int = 1000, give_up_rate: int = 10000)-> list[list]:
+    rng = np.random.default_rng()
     loosing_coals_all = []
+         
     for i in range(max_out + 1):
         loosing_coals_pre = []
         bool_array = []
@@ -30,7 +33,7 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
                 for i in positions:
                     p[i] = 1
                 bool_array.append(p)   
-                   
+                
         for elem in bool_array: 
             test_coal = []
             for j in range(len(elem)):               
@@ -39,9 +42,9 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
             if not main.is_winning(test_coal):
                 loosing_coals_pre.append(test_coal)
         if len(loosing_coals_pre)  > 0:
-           loosing_coals_all.append(loosing_coals_pre) 
-                
-
+            loosing_coals_all.append(loosing_coals_pre)
+               
+    loosing_coals_all_arr = np.array([np.array(xi) for xi in loosing_coals_all], dtype=object)
     loosing_coals = [] 
     c_bad_luck = 0  
     current_max_length = 0
@@ -51,18 +54,18 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
         # print(f"h {c_bad_luck}")
         c_bad_luck = c_bad_luck + 1
         if c_bad_luck % kick_rate == 0:
-           # c_bad_luck = 0
-            loosing_coals.pop(random.randrange(len(loosing_coals)))
+           # c_bad_luck = 0 
+            loosing_coals.pop(rng.integers(0, len(loosing_coals)))
         if c_bad_luck % give_up_rate == 0:
             min_gain = min_gain - 1
             c_bad_luck = 0
             # print("minimizing dis")
-        wanted_length_ix = random.randint(0, len(loosing_coals_all)-1)
+        wanted_length_ix = rng.integers(0, len(loosing_coals_all_arr)-1)
         # print(f"{wanted_length_ix} {len(loosing_coals_all)}")
-        cand = random.choice(loosing_coals_all[wanted_length_ix])
-        
-        if cand in loosing_coals:
-            continue
+        cand = random.choice(loosing_coals_all_arr[wanted_length_ix])
+        for prev in loosing_coals:
+            if np.array_equal(prev, cand):
+                continue
         min_dist = min_gain
         for elem in loosing_coals:
             d = calc_gain(elem, cand)
@@ -98,7 +101,7 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
 
                 
 if __name__ == '__main__':
-    for elem in get_loosing_coals(4):
+    for elem in get_loosing_coals():
         invert_to_readable = []
         for i in range(len(staaten.state_names)):
             if i in elem:

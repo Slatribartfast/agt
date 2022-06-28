@@ -13,7 +13,10 @@ winning_coalitions_pre = [
     [1, 2, 4],
     [3, 4, 7, 9, 13, 14],
     [1, 7, 10, 11, 13, 14, 17, 18],
+    # added by alex
+    [1,2,5],
 ]
+
 
 winning_coalitions = []
 for i in range(len(winning_coalitions_pre)):

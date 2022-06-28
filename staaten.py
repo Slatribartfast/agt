@@ -73,3 +73,16 @@ state_share = np.array([15.9,
 for i in range(len(state_share)):
     state_share[i] = state_pop[i] / pop_all
 
+def make_readable_alla_paper(l: list[int]) -> list[int]:
+    res = []
+    for i in range(len(state_names)):
+        if i not in l:
+            res.append(i + 1)
+    return res    
+    
+def from_paper_name_to_real(l:list[int]) -> list[int]:
+    res = []
+    for i in range(len(state_names)):
+        if i+1 not in l:
+            res.append(i)
+    return res
