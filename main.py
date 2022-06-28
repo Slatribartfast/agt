@@ -1,8 +1,10 @@
 from itertools import combinations
+import time
 
 import staaten
 import loosingKoalition
 import winningKoalitions
+import calculateLoosingKoalition
 
 def without(a: list[int], b: list[int]) -> list[int]:
     # a without b
@@ -15,11 +17,21 @@ def without(a: list[int], b: list[int]) -> list[int]:
     
 
 
-def get_winning_coalitions(input_coal: list[list], special_coalitions : list[list]) -> list[list]:
+def get_winning_coalitions(input_coal: list[list], special_coalitions : list[list], lk = loosingKoalition.loosing_coalitions, debug = False) -> list[list]:
     # special case 15 (14)
-    
+    # retreiv the numbers for debug prupose
+    set_1 = -1
+    set_2 = -1
+    for i in range(len(lk)):
+        if lk[i] == input_coal[0]:
+            set_1 = i
+        if lk[i] == input_coal[1]:
+            set_2 = i
+            
     if input_coal[0] in special_coalitions and input_coal[1] in special_coalitions:
-        print("CAREFULL, you cant get an winning coal of two special coalitions")
+        if debug:
+            print(f"CAREFULL, you cant get an winning coal of two special coalitions {set_1} and {set_2}")
+            print("Therefore this cant be added to non sep non list \n")
         return[]
     
     if input_coal[0] in special_coalitions:
@@ -31,7 +43,7 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
         
     if input_coal[1] in special_coalitions:
         
-        print("the special thing is happening")
+        # print("the special thing is happening")
                
         dif_i_15 = [] # i ohne 15
         dif_15_i = [] # 15 ohne i
@@ -79,7 +91,10 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
             W_1.append(i)
     
     if len(W_1) + len(A_prev) < 25:
-        print("W1 too small")
+        if debug:
+            print("W1 too small")
+            print(f"Cant contruct winning set for {set_1} and {set_2}")
+            print("Therefore this cant be added to non sep non list \n")
         return []
     
     # minimal A
@@ -89,8 +104,7 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
     for elem in A:
         W_1.append(elem)
     
-    print(len(W_1))
-            
+    
     # W2
     W_2  = []
     for i in range(len(staaten.state_share)):
@@ -99,18 +113,24 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
                 continue
             else:
                 W_2.append(i)
-            
+        
     # test w2
     pop_c = 0.0
     for elem in W_2:
         pop_c += staaten.state_share[elem]
     
     if len(W_2) < 0.55 * len(staaten.state_names):
-        print("w2 has too small number of staates")
+        if debug:
+            print("w2 has too small number of staates")
+            print(f"Cant contruct winning set for {set_1} and {set_2}")
+            print("Therefore this cant be added to non sep non list \n")
         return []
     
     if pop_c < 0.65:
-        print("w2 has to little population")
+        if debug:
+            print("w2 has to little population")
+            print(f"Cant contruct winning set for {set_1} and {set_2}")
+            print("Therefore this cant be added to non sep non list \n")
         return []
          
             
@@ -120,14 +140,14 @@ def get_winning_coalitions(input_coal: list[list], special_coalitions : list[lis
 
 def is_winning(input_coal: list[int]) -> bool:
     if len(input_coal) >= 25:
-        print("over 25")
+        # print("over 25")
         return True
 
     if len(input_coal) >= len(staaten.state_names) * 0.55:
         pop_c = 0
         for elem in input_coal:
             pop_c += staaten.state_share[elem]
-        print(pop_c)
+        # print(pop_c)
         if pop_c >= 0.65:
             return True
     return False
@@ -151,31 +171,28 @@ def is_non_separable(input_losing_coal: list[list], winning_coal: list[list]) ->
     return True
 
 
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-
+def get_cover(wk = winningKoalitions.winning_coalitions, lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
+    res = -1
+    time_before = time.time()
     non_sep_loosing_coal = []
-    wk = winningKoalitions.winning_coalitions
-    lk = loosingKoalition.loosing_coalitions
 
     # alle permutationen aus loosing in is non sep mit get winning packen
     for i in range(len(lk)-1):
         for j in range(i,len(lk)):
             if i == j:
                 continue
-            win = get_winning_coalitions(input_coal = [lk[i], lk[j]], special_coalitions=[lk[14]])
+            win = get_winning_coalitions(input_coal = [lk[i], lk[j]], special_coalitions=[lk[-1]], lk=lk)
             if len(win) < 1:
                 continue
             if is_non_separable([lk[i],lk[j]],win):
                 non_sep_loosing_coal.append([i, j])
     
-    print("die zweier")
-    for elem in non_sep_loosing_coal:
-        print(elem)
+    # print("die zweier")
+    # for elem in non_sep_loosing_coal:
+    #     print(elem)
      
     # wenn einer zweier nicht klappt, den erweitern und gegen bekannte winning testen, sonst dicard
+    # vierer machen hier macht keinen sinn, da es später eh schon keine vierer gibt, dann können mithilfe von non sep vierer auch später keine gekickt werden
     for i in range(len(lk)-1):
         for j in range(i,len(lk)):
             if [i,j] not in non_sep_loosing_coal:
@@ -198,37 +215,29 @@ if __name__ == '__main__':
                                 if is_non_separable(input_losing_coal=[lk[i],lk[j],lk[k]], winning_coal=[wk[w_1], wk[w_2], wk[w_3]]):
                                     non_sep_loosing_coal.append([i,j,k])
                         
-    print("die zweier und dreier")
-    for elem in non_sep_loosing_coal:
-        print(elem)           
+    # print("die zweier und dreier")
+    # for elem in non_sep_loosing_coal:
+    #     print(elem)           
     
     # sammeln aller nicht sep mengen
-    # die cover ich jetzt
-    
-    
-    # mange aller mengen kardinalität kleiner gleich der größten von den seperablen, die nicht in den nicht seps stehen
-    # pick 7 aus den sep mengen, sodass die vereinigung der sieben alle 15 bekannten grund lossers abdeckt 
-    # UND die loosing nicht als Untermenge sind ()
-    # UND dürfen sich selsbt nicht beinhalten
-    
-    # alt variante
-    # collect all collections bis max kaardinalität 4
+
+    # collect all collections bis max kaardinalität 4 (man kann sehen, dass alle vierer gekickt werden, deshalb müssen auch keine fünfer gesucht werden)
     cover = []
-    # einer
+    # einer reinwerfen
     for i in range(len(lk)):
         cover.append([i])
-    # zweier
+    # zweier reinwerfen
     for i in range(len(lk)):
         for k in range(i+1, len(lk)):
             cover.append([i,k])
-    # dreier
+    # dreier reinwerfen
     for i in range(len(lk)):
         for j in range(i+1, len(lk)):
             for k in range(j+1, len(lk)):
                 cover.append([i,j,k])
                 pass
                 
-    # vierer
+    # vierer reinwerfen
     for i in range(len(lk)):
         for j in range(i+1, len(lk)):
             for k in range(j+1, len(lk)):
@@ -238,8 +247,8 @@ if __name__ == '__main__':
                     
 
             
-    # MINUS die in non sep stehen
-    print(all(item in [4,5,6] for item in [4,5]))
+    # MINUS die in non sep stehen (wird dann cover 2 genennt)
+    # print(all(item in [4,5,6] for item in [4,5]))
     
     cover_2 = cover.copy()
     for c in cover:
@@ -249,7 +258,7 @@ if __name__ == '__main__':
                     cover_2.remove(c)
     
         
-    # MINUS die in sich selbst vorkommen (den maximalen behalten, den minimalen kicken)
+    # MINUS die in sich selbst vorkommen (den maximalen behalten, den minimalen kicken) (wird dann cover 3 genannt) 
     cover_3 = cover_2.copy()
     for c in cover_2:
         for s in cover_2:
@@ -259,12 +268,17 @@ if __name__ == '__main__':
                 if s in cover_3:
                     cover_3.remove(s)
                 
-    print("cover")
-    for elem in cover_3:
-        print(elem)          
+    # print("cover")
+    # for elem in cover_3:
+    #     print(elem)          
 
     
-    # falls die max 4 kardinaliät nicht reichte nochmal mit mehr
+    # falls die max 4 kardinaliät nicht reichte nochmal mit mehr (wird bisher nicht gemacht, nur problem gecalled)
+    for elem in cover_3:
+        if len(elem)> 3:
+            if debug:
+                print("DAS GEHT SO NICHT!!! es gibt 4er cover, die nicht gekickt werden -> es müssen dann auch fünfer betrachtet werden, sonst gilt der Beweis nicht")
+            return -1
     #
     # step 2 keine 7 verschiedene daraus als vereinigugn ergibt das gesamte L1 bis L15
     exist_cover = 0
@@ -289,9 +303,45 @@ if __name__ == '__main__':
                             combined.append(to_add)
             if len(combined) >= len(lk):
                 is_covering = True
-                print(f"There is a cover with {comb} at {exist_cover}")
+                if debug:
+                    print(f"There is a cover with {comb}, especially the sets \n")
+                    for set_of_seps in range(len(cover_3)):
+                        if comb[set_of_seps]:
+                            print(cover_3[set_of_seps]) 
+                
+                    print(f"\nSo there is no {exist_cover-1} cover, somit ist die Dimension mindestens {exist_cover-1}")
+                res = exist_cover-1
+                break
+    if debug:
+        print(f"The process time was {time.time() - time_before:.2f}s")
+    return res
 
+
+# Press the green button in the gutter to run the script.
+if __name__ == '__main__':
+    best = 0
+    tries = 0
+    with open('result.txt', 'w') as f:
+        f.write('sucessfull combis')
+        f.flush()
+        while(best < 10):
+            print(best)
+            tries += 1
+            if tries % 10 == 0:
+                f.write(f"tried {tries} times") 
+                f.flush()
+            lk = calculateLoosingKoalition.get_loosing_coals(max_overall=20)
+            res = get_cover(lk=lk, debug = False)
+            if res > best:
+                best = res
+                f.write(best)
+                f.write("\n")
+                f.write(lk)
+                f.write("\n")
+                f.write("\n")
+                f.flush()
         
-    
+        
+
     
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
