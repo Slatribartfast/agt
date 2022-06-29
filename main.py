@@ -318,16 +318,30 @@ def get_cover(lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
 
     
     # falls die max 4 kardinaliät nicht reichte nochmal mit mehr (wird bisher nicht gemacht, nur problem gecalled)
-    for elem in cover_3:
+    saveing = []
+    for elem in cover_3:   
         if len(elem) > 4:
             if debug:
                 print("Es gibt 5er cover, das nicht gekickt werden -> es müssen dann auch fünfer betrachtet werden, sonst gilt der Beweis nicht")
                 print(f"unkickbar {elem} aus \n")
                 for ding in non_sep_loosing_coal:
                     print(ding)
-            
+            saveing.append(elem)   
+    if len(saveing) > 0:
+        if len(lk) < 8:
             return -1
-    #
+        else:
+            pr = []
+            for elem in saveing:
+                for i in elem:
+                    pr.append(i)
+            most_common = max(pr, key = pr.count)
+            if most_common == (len(lk)-1):
+                return []
+            # print("stay")
+            lk.pop(most_common)
+            return get_cover(lk=lk,debug=debug)
+#
     # step 2 keine 7 verschiedene daraus als vereinigugn ergibt das gesamte L1 bis L15
     exist_cover = 0
     is_covering = False
@@ -365,15 +379,18 @@ def get_cover(lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
     return res
 
 
-def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12, min_gain=7, kick_rate=500, give_up_rate=100000,id = -1):  
+def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12, min_gain=6, kick_rate=500, give_up_rate=100000,id = -1):  
     print("go")
     best = 0
     tries = 0            
     while(True):  
         tries += 1
+        if True:
+            if tries % 10 == 0:
+                print(f"max_overall: {max_overall}, tries: {tries}")
         lk = calculateLoosingKoalition.get_loosing_coals(max_out, max_overall, min_gain, kick_rate, give_up_rate)
         res = get_cover(lk = lk, debug = False)
-        if res > best:
+        if res > 4:
             best = res
             print(best)
             with open(name, 'a') as f: 
@@ -391,22 +408,27 @@ def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12
     
 
 
-if __name__ == '__main__':       
-    proc = []
-    num_loosing = [16,16,16,16,16,15,15,15,15,14,13,12,11,10,9,8]
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    name = "results"+timestr+".txt"
-    with open(name, 'w') as f: 
-                f.write("Results\n\n")
-                f.flush()
+if __name__ == '__main__':
+    
+    # res = get_cover(lk = calculateLoosingKoalition.get_loosing_coals())
+    
+    if True:   
+        proc = []
+        num_loosing = [25,25,24,24,23,23,23,23,22,22,22,22,21,21,20,20]
+        num_min_gain = [6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7]
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        name = "results"+timestr+".txt"
+        with open(name, 'w') as f: 
+                    f.write("Results\n\n")
+                    f.flush()
 
-    for i in range(len(num_loosing)):         
-        proc.append(Process(target=a_process_for_parallel_execution, args=(name,5, num_loosing[i], 7, 1000, 100000,i))) 
-        proc[-1].start()
-        time.sleep(0.1)
-    for i in range(len(proc)):       
-        proc[i].join() 
-        
+        for i in range(len(num_loosing)):         
+            proc.append(Process(target=a_process_for_parallel_execution, args=(name,5, num_loosing[i], num_min_gain[i], 1000, 100000,i))) 
+            proc[-1].start()
+            time.sleep(0.1)
+        for i in range(len(proc)):       
+            proc[i].join() 
+            
 
         
 

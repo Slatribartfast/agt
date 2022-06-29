@@ -46,6 +46,11 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
     c_bad_luck = 0  
     current_max_length = 0
     
+    # c = 0
+    # for elem in loosing_coals_all:
+    #     c = c + len(elem)
+    # print(c)
+    # 4533
   
     while len(loosing_coals) <  max_overall- 1:
         # print(f"h {c_bad_luck}")
@@ -98,7 +103,7 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
 
                 
 if __name__ == '__main__':
-    for elem in get_loosing_coals(4):
+    for elem in get_loosing_coals():
         invert_to_readable = []
         for i in range(len(staaten.state_names)):
             if i in elem:
