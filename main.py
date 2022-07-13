@@ -379,7 +379,7 @@ def get_cover(lk = loosingKoalition.loosing_coalitions, debug = True) -> int:
     return res
 
 
-def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12, min_gain=6, kick_rate=500, give_up_rate=100000,id = -1):  
+def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12, min_gain=6, kick_rate=500, give_up_rate=100000,id = -1,min_pop_size = 0.625, min_avg_pop_size = 0.645):  
     print("go")
     best = 0
     tries = 0            
@@ -388,7 +388,7 @@ def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12
         if True:
             if tries % 10 == 0:
                 print(f"max_overall: {max_overall}, tries: {tries}")
-        lk = calculateLoosingKoalition.get_loosing_coals(max_out, max_overall, min_gain, kick_rate, give_up_rate)
+        lk = calculateLoosingKoalition.get_loosing_coals(max_out, max_overall, min_gain, kick_rate, give_up_rate,min_pop_size,min_avg_pop_size)
         res = get_cover(lk = lk, debug = False)
         if res > 4:
             best = res
@@ -410,12 +410,21 @@ def a_process_for_parallel_execution(name ="file.txt", max_out=5, max_overall=12
 
 if __name__ == '__main__':
     
+    for elem in loosingKoalition.loosing_coalitions:
+        #print(elem)
+        c = 0 
+        for s in elem:
+            c += staaten.state_share[s]
+        print(str(c))
+    
     # res = get_cover(lk = calculateLoosingKoalition.get_loosing_coals())
     
     if True:   
         proc = []
         num_loosing = [25,25,24,24,23,23,23,23,22,22,22,22,21,21,20,20]
+        num_loosing = [18,17,16,15,14,13]
         num_min_gain = [6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7]
+        num_min_gain = [7,7,7,7,7,7,7,7,7,7]
         timestr = time.strftime("%Y%m%d-%H%M%S")
         name = "results"+timestr+".txt"
         with open(name, 'w') as f: 
@@ -423,14 +432,9 @@ if __name__ == '__main__':
                     f.flush()
 
         for i in range(len(num_loosing)):         
-            proc.append(Process(target=a_process_for_parallel_execution, args=(name,5, num_loosing[i], num_min_gain[i], 1000, 100000,i))) 
+            proc.append(Process(target=a_process_for_parallel_execution, args=(name,5, num_loosing[i], num_min_gain[i], 1000, 1000000,i,0.638,0.642))) 
             proc[-1].start()
             time.sleep(0.1)
         for i in range(len(proc)):       
             proc[i].join() 
             
-
-        
-
-    
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/

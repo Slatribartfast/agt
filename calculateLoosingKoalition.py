@@ -19,7 +19,7 @@ def calc_gain(l_1:list[int], l_2:list[int]):
             
     return res
 
-def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6, kick_rate: int = 1000, give_up_rate: int = 10000)-> list[list]:
+def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6, kick_rate: int = 1000, give_up_rate: int = 10000, min_pop_size = 0.625, min_avg_pop_size = 0.645)-> list[list]:
     loosing_coals_all = []
     for i in range(max_out + 1):
         loosing_coals_pre = []
@@ -37,7 +37,12 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
                 if elem[j]:
                     test_coal.append(j)
             if not main.is_winning(test_coal):
-                loosing_coals_pre.append(test_coal)
+                # and pop enough
+                c = 0
+                for elem in test_coal:
+                    c = c + staaten.state_share[elem]
+                if c > min_pop_size:
+                    loosing_coals_pre.append(test_coal)
         if len(loosing_coals_pre)  > 0:
            loosing_coals_all.append(loosing_coals_pre) 
                 
@@ -46,18 +51,31 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
     c_bad_luck = 0  
     current_max_length = 0
     
-    # c = 0
-    # for elem in loosing_coals_all:
-    #     c = c + len(elem)
-    # print(c)
-    # 4533
-  
+    c = 0
+    for s in loosing_coals_all:
+        c = c + len(s)
+    print(f"There are {c} coalitions left")
+    
     while len(loosing_coals) <  max_overall- 1:
         # print(f"h {c_bad_luck}")
         c_bad_luck = c_bad_luck + 1
         if c_bad_luck % kick_rate == 0:
+            if len(loosing_coals) < 2:
+                continue
            # c_bad_luck = 0
+           # kick one randomly
             loosing_coals.pop(random.randrange(len(loosing_coals)))
+            # and the least populated one
+            #c_pop_l = []
+            #for elem in loosing_coals:  
+            #   count_pop = 0        
+            #    for s in elem:
+            #        count_pop += staaten.state_share[s]
+            #    c_pop_l.append(count_pop)
+            #min_value = min(c_pop_l)
+            #return the index of minimum value 
+            #min_index=c_pop_l.index(min_value)   
+            #loosing_coals.pop(min_index)
         if c_bad_luck % give_up_rate == 0:
             min_gain = min_gain - 1
             c_bad_luck = 0
@@ -73,12 +91,25 @@ def get_loosing_coals(max_out: int = 5, max_overall: int = 15, min_gain: int = 6
             d = calc_gain(elem, cand)
             if d < min_dist:
                 min_dist = d
-                
+        
+        #
+        c_pop_1 = 0
+        avg_pop = 1
+        if len(loosing_coals)  > 0:
+            for elem in loosing_coals:          
+                for s in elem:
+                    c_pop_1 = c_pop_1 + staaten.state_share[s]                   
+        
+        for elem in cand:
+           c_pop_1 = c_pop_1 + staaten.state_share[elem] 
+        
+        avg_pop = (c_pop_1) / (len(loosing_coals) + 1)
+          
         # penelty for long words
         min_dist = min_dist + (max_out - (len(staaten.state_names) - len(cand)))
         # penelaty for long wait
             
-        if min_dist >= min_gain:
+        if min_dist >= min_gain and avg_pop > min_avg_pop_size:
             loosing_coals.append(cand)
             if current_max_length < len(loosing_coals):
                 current_max_length = len(loosing_coals)

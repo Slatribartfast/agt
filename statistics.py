@@ -1,6 +1,6 @@
 bool_c = False
 res = []
-with open("results20220629-113218.txt") as file:
+with open("results20220706-185028.txt") as file:
     for line in file:
         if line == "\n":
             bool_c = True
